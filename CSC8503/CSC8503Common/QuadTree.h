@@ -17,14 +17,14 @@ namespace NCL {
 			T object;
 
 			QuadTreeEntry(T obj, Vector3 pos, Vector3 size) {
-				object		= obj;
-				this->pos	= pos;
-				this->size	= size;
+				object = obj;
+				this->pos = pos;
+				this->size = size;
 			}
 		};
 
 		template<class T>
-		class QuadTreeNode	{
+		class QuadTreeNode {
 		public:
 			typedef std::function<void(std::list<QuadTreeEntry<T>>&)> QuadTreeFunc;
 		protected:
@@ -33,9 +33,9 @@ namespace NCL {
 			QuadTreeNode() {}
 
 			QuadTreeNode(Vector2 pos, Vector2 size) {
-				children		= nullptr;
-				this->position	= pos;
-				this->size		= size;
+				children = nullptr;
+				this->position = pos;
+				this->size = size;
 			}
 
 			~QuadTreeNode() {
@@ -73,10 +73,10 @@ namespace NCL {
 		class QuadTree
 		{
 		public:
-			QuadTree(Vector2 size, int maxDepth = 6, int maxSize = 5){
+			QuadTree(Vector2 size, int maxDepth = 6, int maxSize = 5) {
 				root = QuadTreeNode<T>(Vector2(), size);
-				this->maxDepth	= maxDepth;
-				this->maxSize	= maxSize;
+				this->maxDepth = maxDepth;
+				this->maxSize = maxSize;
 			}
 			~QuadTree() {
 			}

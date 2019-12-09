@@ -64,6 +64,9 @@ namespace NCL {
 			Quaternion GetWorldOrientation() const {
 				return worldOrientation;
 			}
+			void SetWorldOrientation(Quaternion worldOrientation) {
+				this->worldOrientation = worldOrientation;
+			}
 
 			Matrix3 GetInverseWorldOrientationMat() const {
 				return worldOrientation.Conjugate().ToMatrix3();

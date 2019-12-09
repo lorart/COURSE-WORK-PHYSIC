@@ -21,8 +21,8 @@ void Debug::Print(const std::string& text, const Vector2&pos, const Vector4& col
 void Debug::DrawLine(const Vector3& startpoint, const Vector3& endpoint, const Vector4& colour) {
 	DebugLineEntry newEntry;
 
-	newEntry.start	= startpoint;
-	newEntry.end	= endpoint;
+	newEntry.start	= startpoint+Vector3(0,2,0);
+	newEntry.end	= endpoint + Vector3(0, 2, 0);
 	newEntry.colour = colour;
 
 	lineEntries.emplace_back(newEntry);

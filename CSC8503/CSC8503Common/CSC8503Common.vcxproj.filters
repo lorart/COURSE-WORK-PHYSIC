@@ -19,6 +19,12 @@
     <Filter Include="Other">
       <UniqueIdentifier>{7d85adc6-7681-4657-8953-c5696f06c66d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="player">
+      <UniqueIdentifier>{dcd79e1b-bc6c-45f2-9753-b80b152cf3b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameObject">
+      <UniqueIdentifier>{8f950069-51de-47b6-bf0a-244619030b8d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CollisionDetection.h">
@@ -123,6 +129,15 @@
     <ClInclude Include="Debug.h">
       <Filter>Other</Filter>
     </ClInclude>
+    <ClInclude Include="goose.h">
+      <Filter>player</Filter>
+    </ClInclude>
+    <ClInclude Include="apple.h">
+      <Filter>player</Filter>
+    </ClInclude>
+    <ClInclude Include="AiPeople.h">
+      <Filter>player</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CollisionDetection.cpp">
@@ -199,6 +214,15 @@
     </ClCompile>
     <ClCompile Include="Transform.cpp">
       <Filter>Other</Filter>
+    </ClCompile>
+    <ClCompile Include="goose.cpp">
+      <Filter>player</Filter>
+    </ClCompile>
+    <ClCompile Include="apple.cpp">
+      <Filter>player</Filter>
+    </ClCompile>
+    <ClCompile Include="AiPeople.cpp">
+      <Filter>player</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

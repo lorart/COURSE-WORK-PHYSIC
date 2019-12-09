@@ -20,8 +20,18 @@ TutorialGame::TutorialGame()	{
 	inSelectionMode = false;
 
 	Debug::SetRenderer(renderer);
+	
+//	std::vector<apple> appleA{ 8 };
+	grid = new NavigationGrid("TestGrid2.txt");
+
+	gooseA = new goose();
+	characterA = new AiPeople();
+	
+	HomePosition = Vector3(6,0,6);
 
 	InitialiseAssets();
+	
+
 }
 
 /*
@@ -52,6 +62,150 @@ void TutorialGame::InitialiseAssets() {
 	InitCamera();
 	InitWorld();
 }
+
+#pragma region navigation
+
+void NCL::CSC8503::TutorialGame::CreateNavigationGrid()
+{
+	Vector3 cubeDims = Vector3(1, 1, 1);
+	GridNode n;
+
+	Vector3 position;
+	for (int y = 0; y < grid->gridWidth; ++y) {
+		for (int x = 0; x < grid->gridHeight; ++x) {
+			//position =Vector3((grid->gridWidth/ tempnodesize)*x,0, (grid->gridHeight / tempnodesize)*y);
+			//auto zzz = grid->getGridNode();
+			n = grid->getGridNode()[(grid->gridWidth * y) + x];
+			if (n.type == 'x')
+			{
+				AddCubeToWorld(n.position, cubeDims * 3, 0);
+			}
+			else if (n.type =='.') {				
+			   roadPosition.push_back(n.position);
+			
+			}
+		
+		}
+	}
+	int temp = roadPosition.size();
+	for (int  i = 0; i < applenumber; i++)
+	{
+		applePosition.push_back(roadPosition[rand()/temp]+Vector3(0,2,0));
+		std::cout << "pushing into roadposition" << applePosition[i] << std::endl;
+	}
+
+
+	AddFloorToWorld(Vector3(50, -5, 50));
+
+}
+
+
+void NCL::CSC8503::TutorialGame::OnlyDisplayPathfinding(vector<Vector3>testNodes) {
+	for (int i = 1; i < testNodes.size(); ++i) {
+		Vector3 a = testNodes[i - 1];
+		Vector3 b = testNodes[i];
+		
+		Debug::DrawLine(a, b, Vector4(0, 1, 0, 1));
+	}
+}
+
+
+
+void NCL::CSC8503::TutorialGame::DisplayPathfinding(vector<Vector3>& testNodes,float time) {
+	static float totalTime = 0.0f;
+	totalTime += time*0.2;
+	int i = floor(totalTime);
+	float smooth = totalTime - floor(totalTime);
+
+	if (testNodes.size() > 1) {
+		//std::cout << "testNodes.size" << testNodes.size() << std::endl;
+		Vector3 a = testNodes[1];
+		Vector3 b = testNodes[0];
+		Vector3 c = b*(smooth) + a *(1-smooth);
+		//Debug::DrawLine(a, b, Vector4(0, 1, 0, 1));
+		characterA->GetTransform().SetWorldPosition(c);
+	//	std::cout << (c - b).Length() << std::endl;
+		if ((c - b).Length() < 0.01) {
+			testNodes.erase(testNodes.begin());
+		}
+	}
+	if (testNodes.size() == 1) {
+		testNodes.clear();
+	}
+
+}
+
+void NCL::CSC8503::TutorialGame::UpdatePathFinding(float faketime)
+{
+	static Vector3 previousGoosePosition = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
+	Vector3 currentGooseNoY = GetGoosePosition();
+	currentGooseNoY.y = 0;
+	static vector<Vector3> testNodes;
+	if ((previousGoosePosition - currentGooseNoY).Length() > 0.01) {
+		//std::cout << previousGoosePosition << " " << currentGooseNoY << std::endl;
+		previousGoosePosition = currentGooseNoY;
+		testNodes = characterA->GetPathNode(grid, currentGooseNoY,GetCharacterPosition(characterA));
+	
+
+	}
+	else {
+		//std::cout << previousGoosePosition << " OK with " << currentGooseNoY << std::endl;
+		//std::cout << "Undo" << std::endl;
+	}
+	OnlyDisplayPathfinding(testNodes);
+	DisplayPathfinding(testNodes, faketime);
+}
+
+void NCL::CSC8503::TutorialGame::UpdateColApple(float dt,goose* gooseP)
+{
+
+	for (int i = 0; i < applenumber; i++)
+	{
+		appleA[i].CheckGooseColli(gooseP->GetTransform().GetWorldPosition());
+		appleA[i].SetAppleGamePosition(gooseP->GetTransform().GetWorldPosition(), HomePosition);
+	}
+
+
+
+}
+
+
+Vector3 NCL::CSC8503::TutorialGame::GetGoosePosition()
+{
+//	Vector3 tempposition= (gooseMesh->GetPositionData())[0];
+	Vector3 tempposition = (gooseA->GetTransform()).GetWorldPosition();
+//	std::cout << "goose position is=" << tempposition << std::endl;
+	return (tempposition);
+}
+
+Vector3 NCL::CSC8503::TutorialGame::GetCharacterPosition(AiPeople* a)
+{
+	Vector3 tempposition = (a->GetTransform()).GetWorldPosition();
+	return Vector3(tempposition);
+}
+
+
+#pragma endregion
+
+
+//#pragma region COLLECT APPLE
+//
+//void NCL::CSC8503::TutorialGame::UpdateColApple(float dt)
+//{
+//	for (int i = 0; i < applenumber; i++)
+//	{
+//		gooseA->OnCollisionBegin(appleA[i]);
+//	}
+//	
+//}
+//
+//
+//#pragma endregion
+
+
+
+
+
 
 TutorialGame::~TutorialGame()	{
 	delete cubeMesh;
@@ -84,11 +238,13 @@ void TutorialGame::UpdateGame(float dt) {
 
 	SelectObject();
 	MoveSelectedObject();
-
+	//UpdateColApple(dt);
 	world->UpdateWorld(dt);
 	renderer->Update(dt);
 	physics->Update(dt);
 
+	UpdateColApple(dt,gooseA);
+	UpdateScore(gooseA);
 	Debug::FlushRenderables();
 	renderer->Render();
 }
@@ -132,6 +288,7 @@ void TutorialGame::UpdateKeys() {
 		DebugObjectMovement();
 	}
 }
+
 
 void TutorialGame::LockedObjectMovement() {
 	Matrix4 view		= world->GetMainCamera()->BuildViewMatrix();
@@ -179,6 +336,7 @@ void  TutorialGame::LockedCameraMovement() {
 		world->GetMainCamera()->SetYaw(angles.y);
 	}
 }
+
 
 
 void TutorialGame::DebugObjectMovement() {
@@ -262,6 +420,14 @@ bool TutorialGame::SelectObject() {
 			if (world->Raycast(ray, closestCollision, true)) {
 				selectionObject = (GameObject*)closestCollision.node;
 				selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
+				///
+				
+				Debug::Print("it is a "+selectionObject->GetName(), Vector2(0, 100));
+			
+
+
+
+
 				return true;
 			}
 			else {
@@ -333,18 +499,34 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	InitMixedGridWorld(10, 10, 3.5f, 3.5f);
-	AddGooseToWorld(Vector3(30, 2, 0));
-	AddAppleToWorld(Vector3(35, 2, 0));
+	
+	CreateNavigationGrid();
+	AddGooseToWorld(Vector3(30, 10, 20));
+	
+	AddAppleToWorld(applePosition);
+	
+	AddParkKeeperToWorld(Vector3(40, 10, 20));
+	AddCharacterToWorld(Vector3(45, 10, 20));
+	AddHouseToWorld(HomePosition, Vector3(1, 1, 1),0);
 
-	AddParkKeeperToWorld(Vector3(40, 2, 0));
-	AddCharacterToWorld(Vector3(45, 2, 0));
-
-	//AddFloorToWorld(Vector3(0, -2, 0));
 }
 
 //From here on it's functions to add in objects to the world!
 
+#pragma region add things to world
+
+void  TutorialGame::UpdateScore(goose* gooseP) {
+	
+		//Debug::Print(gooseP->GetName()+" score is " + gooseP->GetScore(), Vector2(10, 40));
+	for (int i = 0; i < applenumber; i++)
+	{		Debug::Print(" score is " + gooseP->GetScore(
+		appleA[i].GetTransform().GetWorldPosition(), 
+			gooseP->GetTransform().GetWorldPosition()), 
+			Vector2(10, 300));
+	}
+		
+
+}
 /*
 
 A single function to add a large immoveable cube to the bottom of our world
@@ -359,12 +541,13 @@ GameObject* TutorialGame::AddFloorToWorld(const Vector3& position) {
 	floor->GetTransform().SetWorldScale(floorSize);
 	floor->GetTransform().SetWorldPosition(position);
 
+
 	floor->SetRenderObject(new RenderObject(&floor->GetTransform(), cubeMesh, basicTex, basicShader));
 	floor->SetPhysicsObject(new PhysicsObject(&floor->GetTransform(), floor->GetBoundingVolume()));
 
 	floor->GetPhysicsObject()->SetInverseMass(0);
 	floor->GetPhysicsObject()->InitCubeInertia();
-
+	floor->SetName("floor");
 	world->AddGameObject(floor);
 
 	return floor;
@@ -391,7 +574,7 @@ GameObject* TutorialGame::AddSphereToWorld(const Vector3& position, float radius
 
 	sphere->GetPhysicsObject()->SetInverseMass(inverseMass);
 	sphere->GetPhysicsObject()->InitSphereInertia();
-
+	sphere->SetName("sphere");
 	world->AddGameObject(sphere);
 
 	return sphere;
@@ -412,35 +595,79 @@ GameObject* TutorialGame::AddCubeToWorld(const Vector3& position, Vector3 dimens
 
 	cube->GetPhysicsObject()->SetInverseMass(inverseMass);
 	cube->GetPhysicsObject()->InitCubeInertia();
-
+	cube->SetName("cube");
 	world->AddGameObject(cube);
 
 	return cube;
 }
 
-GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
+GameObject* TutorialGame::AddHouseToWorld(const Vector3& position, Vector3 dimensions, float inverseMass) {
+	GameObject* cube = new GameObject();
+
+	AABBVolume* volume = new AABBVolume(dimensions);
+
+	cube->SetBoundingVolume((CollisionVolume*)volume);
+
+	cube->GetTransform().SetWorldPosition(position);
+	cube->GetTransform().SetWorldScale(dimensions);
+
+	cube->SetRenderObject(new RenderObject(&cube->GetTransform(), cubeMesh, basicTex, basicShader));
+	cube->SetPhysicsObject(new PhysicsObject(&cube->GetTransform(), cube->GetBoundingVolume()));
+
+	cube->GetPhysicsObject()->SetInverseMass(inverseMass);
+	cube->GetPhysicsObject()->InitCubeInertia();
+	cube->SetName("House");
+	cube->GetRenderObject()->SetColour(Vector4(1,1, 0, 1));
+	world->AddGameObject(cube);
+
+	return cube;
+}
+
+//GameObject* TutorialGame::AddGooseToWorld(const Vector3& position)
+//{
+//	float size			= 1.0f;
+//	float inverseMass	= 1.0f;
+//
+//
+//
+//	SphereVolume* volume = new SphereVolume(size);
+//	goose->SetBoundingVolume((CollisionVolume*)volume);
+//
+//	goose->GetTransform().SetWorldScale(Vector3(size,size,size) );
+//	goose->GetTransform().SetWorldPosition(position);
+//
+//	goose->SetRenderObject(new RenderObject(&goose->GetTransform(), gooseMesh, nullptr, basicShader));
+//	goose->SetPhysicsObject(new PhysicsObject(&goose->GetTransform(), goose->GetBoundingVolume()));
+//
+//	goose->GetPhysicsObject()->SetInverseMass(inverseMass);
+//	goose->GetPhysicsObject()->InitSphereInertia();
+//
+//	world->AddGameObject(goose);
+//
+//	return goose;
+//}
+goose* TutorialGame::AddGooseToWorld(const Vector3& position)
 {
-	float size			= 1.0f;
-	float inverseMass	= 1.0f;
-
-	GameObject* goose = new GameObject();
+	float size = 1.0f;
+	float inverseMass = 1.0f;
 
 
+	
 	SphereVolume* volume = new SphereVolume(size);
-	goose->SetBoundingVolume((CollisionVolume*)volume);
+	gooseA->SetBoundingVolume((CollisionVolume*)volume);
+	std::cout << gooseA->GetName() << std::endl;
+	gooseA->GetTransform().SetWorldScale(Vector3(size, size, size));
+	gooseA->GetTransform().SetWorldPosition(position);
 
-	goose->GetTransform().SetWorldScale(Vector3(size,size,size) );
-	goose->GetTransform().SetWorldPosition(position);
+	gooseA->SetRenderObject(new RenderObject(&gooseA->GetTransform(), gooseMesh, nullptr, basicShader));
+	gooseA->SetPhysicsObject(new PhysicsObject(&gooseA->GetTransform(), gooseA->GetBoundingVolume()));
 
-	goose->SetRenderObject(new RenderObject(&goose->GetTransform(), gooseMesh, nullptr, basicShader));
-	goose->SetPhysicsObject(new PhysicsObject(&goose->GetTransform(), goose->GetBoundingVolume()));
+	gooseA->GetPhysicsObject()->SetInverseMass(inverseMass);
+	gooseA->GetPhysicsObject()->InitSphereInertia();
 
-	goose->GetPhysicsObject()->SetInverseMass(inverseMass);
-	goose->GetPhysicsObject()->InitSphereInertia();
+	world->AddGameObject(gooseA);
 
-	world->AddGameObject(goose);
-
-	return goose;
+	return gooseA;
 }
 
 GameObject* TutorialGame::AddParkKeeperToWorld(const Vector3& position)
@@ -462,12 +689,21 @@ GameObject* TutorialGame::AddParkKeeperToWorld(const Vector3& position)
 	keeper->GetPhysicsObject()->SetInverseMass(inverseMass);
 	keeper->GetPhysicsObject()->InitCubeInertia();
 
+	keeper->GetTransform().SetWorldOrientation(
+		Quaternion::AxisAngleToQuaterion(Vector3(0,1,0), 90.0f)
+
+		//keeper->GetTransform().GetWorldOrientation() + Quaternion(0, 90, 0, 0)
+	
+	)  ;
+		
+   
+
 	world->AddGameObject(keeper);
 
 	return keeper;
 }
 
-GameObject* TutorialGame::AddCharacterToWorld(const Vector3& position) {
+AiPeople* TutorialGame::AddCharacterToWorld(const Vector3& position) {
 	float meshSize = 4.0f;
 	float inverseMass = 0.5f;
 
@@ -481,56 +717,64 @@ GameObject* TutorialGame::AddCharacterToWorld(const Vector3& position) {
 		minVal.y = min(minVal.y, i.y);
 	}
 
-	GameObject* character = new GameObject();
+	//GameObject* character = new GameObject();
 
 	float r = rand() / (float)RAND_MAX;
 
 
 	AABBVolume* volume = new AABBVolume(Vector3(0.3, 0.9f, 0.3) * meshSize);
-	character->SetBoundingVolume((CollisionVolume*)volume);
+	characterA->SetBoundingVolume((CollisionVolume*)volume);
 
-	character->GetTransform().SetWorldScale(Vector3(meshSize, meshSize, meshSize));
-	character->GetTransform().SetWorldPosition(position);
+	characterA->GetTransform().SetWorldScale(Vector3(meshSize, meshSize, meshSize));
+	characterA->GetTransform().SetWorldPosition(position);
 
-	character->SetRenderObject(new RenderObject(&character->GetTransform(), r > 0.5f ? charA : charB, nullptr, basicShader));
-	character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
+	characterA->SetRenderObject(new RenderObject(&characterA->GetTransform(), r > 0.5f ? charA : charB, nullptr, basicShader));
+	characterA->SetPhysicsObject(new PhysicsObject(&characterA->GetTransform(), characterA->GetBoundingVolume()));
 
-	character->GetPhysicsObject()->SetInverseMass(inverseMass);
-	character->GetPhysicsObject()->InitCubeInertia();
+	characterA->GetPhysicsObject()->SetInverseMass(inverseMass);
+	characterA->GetPhysicsObject()->InitCubeInertia();
 
-	world->AddGameObject(character);
+	world->AddGameObject(characterA);
 
-	return character;
+	return characterA;
 }
 
-GameObject* TutorialGame::AddAppleToWorld(const Vector3& position) {
-	GameObject* apple = new GameObject();
+apple* TutorialGame::AddAppleToWorld(const vector<Vector3>& position) {
+	//for (int i = 0; i <sizeof(appleA)/ sizeof(appleA[0]); i++)
+	for (int i = 0; i < applenumber; i++)
+	{
+		SphereVolume* volume = new SphereVolume(0.7f);
+		//appleA[i].GetRenderObject()->SetColour(Vector4(1, 0, 0, 1));
+		appleA[i].SetBoundingVolume((CollisionVolume*)volume);
+		appleA[i].GetTransform().SetWorldScale(Vector3(4, 4, 4));
+		appleA[i].GetTransform().SetWorldPosition(position[i]);
 
-	SphereVolume* volume = new SphereVolume(0.7f);
-	apple->SetBoundingVolume((CollisionVolume*)volume);
-	apple->GetTransform().SetWorldScale(Vector3(4, 4, 4));
-	apple->GetTransform().SetWorldPosition(position);
+		appleA[i].SetRenderObject(new RenderObject(&appleA[i].GetTransform(), appleMesh, nullptr, basicShader));
+		appleA[i].SetPhysicsObject(new PhysicsObject(&appleA[i].GetTransform(), appleA[i].GetBoundingVolume()));
+		//std::cout << appleA[i]->GetName() << std::endl;
+		appleA[i].GetPhysicsObject()->SetInverseMass(1.0f);
+		appleA[i].GetPhysicsObject()->InitSphereInertia();
+		appleA[i].GetRenderObject()->SetColour(Vector4(1, 0, 0, 1));
+		world->AddGameObject(&appleA[i]);
+		
 
-	apple->SetRenderObject(new RenderObject(&apple->GetTransform(), appleMesh, nullptr, basicShader));
-	apple->SetPhysicsObject(new PhysicsObject(&apple->GetTransform(), apple->GetBoundingVolume()));
-
-	apple->GetPhysicsObject()->SetInverseMass(1.0f);
-	apple->GetPhysicsObject()->InitSphereInertia();
-
-	world->AddGameObject(apple);
-
-	return apple;
-}
-
-void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius) {
-	for (int x = 0; x < numCols; ++x) {
-		for (int z = 0; z < numRows; ++z) {
-			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
-			AddSphereToWorld(position, radius, 1.0f);
-		}
 	}
-	AddFloorToWorld(Vector3(0, -2, 0));
+	std::cout << "add apple" << std::endl;
+	return appleA.data();
+	
 }
+
+//void TutorialGame::InitSphereGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, float radius) {
+//	for (int x = 0; x < numCols; ++x) {
+//		for (int z = 0; z < numRows; ++z) {
+//			Vector3 position = Vector3(x * colSpacing, 10.0f, z * rowSpacing);
+//			AddSphereToWorld(position, radius, 1.0f);
+//		}
+//	}
+//	AddFloorToWorld(Vector3(0, -2, 0));
+//}
+//
+//#pragma endregion
 
 void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing) {
 	float sphereRadius = 1.0f;
@@ -548,7 +792,7 @@ void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing
 			}
 		}
 	}
-	AddFloorToWorld(Vector3(0, -2, 0));
+//	AddFloorToWorld(Vector3(0, -2, 0));
 }
 
 void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims) {
@@ -558,7 +802,7 @@ void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing,
 			AddCubeToWorld(position, cubeDims, 1.0f);
 		}
 	}
-	AddFloorToWorld(Vector3(0, -2, 0));
+//	AddFloorToWorld(Vector3(0, -2, 0));
 }
 
 void TutorialGame::BridgeConstraintTest() {

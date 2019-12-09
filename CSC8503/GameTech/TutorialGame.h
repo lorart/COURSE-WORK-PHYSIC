@@ -1,19 +1,42 @@
 #pragma once
 #include "GameTechRenderer.h"
 #include "../CSC8503Common/PhysicsSystem.h"
+#include "../CSC8503Common/NavigationMap.h"
+#include "../CSC8503Common/NavigationGrid.h"
+#include "../CSC8503Common/AiPeople.h"
+#include "../CSC8503Common/goose.h"
+#include "../CSC8503Common/apple.h"
 
 
 namespace NCL {
 	namespace CSC8503 {
-		class TutorialGame		{
+		class TutorialGame	: public NavigationGrid {
 		public:
 			TutorialGame();
 			~TutorialGame();
-
+			vector<Vector3> testNodes;
 			virtual void UpdateGame(float dt);
+			void DisplayPathfinding(vector<Vector3>& testNodes, float time);
+			void OnlyDisplayPathfinding(vector<Vector3> testNodes);
+			Vector3 GoosePlayer;
+			void UpdatePathFinding(float time);
+			void UpdateColApple(float dt,  goose* gooseA);
+
+			vector<Vector3> roadPosition;
+			vector<Vector3> applePosition;
+			void UpdateScore(goose* gooseP);
+
+
+
+
 
 		protected:
 			void InitialiseAssets();
+			void CreateNavigationGrid();
+
+			
+
+			
 
 			void InitCamera();
 			void UpdateKeys();
@@ -37,14 +60,20 @@ namespace NCL {
 			void LockedObjectMovement();
 			void LockedCameraMovement();
 
+			Vector3 GetGoosePosition();
+			Vector3 GetCharacterPosition(AiPeople*);
+
+
 			GameObject* AddFloorToWorld(const Vector3& position);
 			GameObject* AddSphereToWorld(const Vector3& position, float radius, float inverseMass = 10.0f);
 			GameObject* AddCubeToWorld(const Vector3& position, Vector3 dimensions, float inverseMass = 10.0f);
-			//IT'S HAPPENING
-			GameObject* AddGooseToWorld(const Vector3& position);
+
+			GameObject* AddHouseToWorld(const Vector3& position, Vector3 dimensions, float inverseMass);
+			
+			goose* AddGooseToWorld(const Vector3& position);
 			GameObject* AddParkKeeperToWorld(const Vector3& position);
-			GameObject* AddCharacterToWorld(const Vector3& position);
-			GameObject* AddAppleToWorld(const Vector3& position);
+			AiPeople* AddCharacterToWorld(const Vector3& position);
+			apple* AddAppleToWorld(const vector<Vector3>& position);
 
 
 			GameTechRenderer*	renderer;
@@ -58,6 +87,15 @@ namespace NCL {
 
 			GameObject* selectionObject = nullptr;
 
+			///////
+			goose* gooseA = nullptr;
+			AiPeople* characterA = nullptr;
+			int applenumber =8;
+			std::vector<apple> appleA{8};
+			Vector3 HomePosition;
+			
+
+
 			OGLMesh*	cubeMesh	= nullptr;
 			OGLMesh*	sphereMesh	= nullptr;
 			OGLTexture* basicTex	= nullptr;
@@ -70,6 +108,10 @@ namespace NCL {
 			OGLMesh*	charA		= nullptr;
 			OGLMesh*	charB		= nullptr;
 
+
+			NavigationGrid* grid = nullptr;
+
+
 			//Coursework Additional functionality	
 			GameObject* lockedObject	= nullptr;
 			Vector3 lockedOffset		= Vector3(0, 14, 20);
@@ -79,4 +121,5 @@ namespace NCL {
 		};
 	}
 }
+
 

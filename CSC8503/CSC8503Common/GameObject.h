@@ -62,6 +62,10 @@ namespace NCL {
 			const string& GetName() const {
 				return name;
 			}
+			void SetName(string ObjectName) {
+				name = ObjectName;
+			}
+
 
 			virtual void OnCollisionBegin(GameObject* otherObject) {
 				//std::cout << "OnCollisionBegin event occured!\n";
